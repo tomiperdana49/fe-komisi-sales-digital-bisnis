@@ -65,6 +65,20 @@
                                     </UBadge>
                                 </div>
                             </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">Cust Lama</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatCurrency(commissionData.commission.custLama?.value || 0) }}</span>
+                                    <UBadge
+                                        v-if="commissionData.commission.custLama"
+                                        :color="trendColor(commissionData.commission.custLama.trend)"
+                                        variant="soft"
+                                        size="sm"
+                                    >
+                                        {{ formatPercentage(commissionData.commission.custLama.percentage) }}
+                                    </UBadge>
+                                </div>
+                            </div>
                         </div>
                     </MetricCard>
                     <MetricCard
@@ -100,6 +114,20 @@
                                         size="sm"
                                     >
                                         {{ formatPercentage(commissionData.subscription.recurring.percentage) }}
+                                    </UBadge>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">Cust Lama</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatCurrency(commissionData.subscription.custLama?.value || 0) }}</span>
+                                    <UBadge
+                                        v-if="commissionData.subscription.custLama"
+                                        :color="trendColor(commissionData.subscription.custLama.trend)"
+                                        variant="soft"
+                                        size="sm"
+                                    >
+                                        {{ formatPercentage(commissionData.subscription.custLama.percentage) }}
                                     </UBadge>
                                 </div>
                             </div>

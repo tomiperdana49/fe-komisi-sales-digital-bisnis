@@ -41,12 +41,14 @@ export interface ManagerCommissionData {
         new: TrendData;
         recurring: TrendData;
         total: TrendData;
+        custLama: TrendData;
     };
     mrc: TrendData;
     subscription: {
         new: TrendData;
         recurring: TrendData;
         total: TrendData;
+        custLama: TrendData;
     };
     newCustomer: TrendData;
     newAccount: TrendData;
