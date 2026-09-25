@@ -123,6 +123,9 @@
                         <UFormField v-if="editingItem?.serviceType === 'internal'" label="Cross Sell Count">
                             <UInput v-model.number="editForm.cross_sell_count" type="number" class="w-full" />
                         </UFormField>
+                        <UFormField label="Base Komisi" description="Kosongkan untuk pakai nilai Subscription sebagai basis komisi (default). Cuma memengaruhi nominal komisi, tidak mempengaruhi MRC/Subscription/Margin.">
+                            <UInput v-model.number="editForm.base_commission" type="number" placeholder="Kosongkan = pakai Subscription" class="w-full" />
+                        </UFormField>
                     </div>
 
                     <div class="flex justify-end gap-2 mt-6">
@@ -437,7 +440,8 @@ const openEdit = (item: SnapshotItem) => {
         month_period: Number(item.monthPeriod),
         total_account: item.totalAccount,
         modal: item.modal ?? undefined,
-        cross_sell_count: item.crossSellCount ?? undefined
+        cross_sell_count: item.crossSellCount ?? undefined,
+        base_commission: item.baseCommission ?? undefined
     }
     editModalOpen.value = true
 }
