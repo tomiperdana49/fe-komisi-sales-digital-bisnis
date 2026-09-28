@@ -37,6 +37,7 @@ export interface SnapshotItem {
     modal: number | null;
     crossSellCount: number | null;
     baseCommission: number | null;
+    mrcOverride: number | null;
     mrc: number;
     commissionPercentage: number;
     commission: number;
@@ -50,7 +51,8 @@ export interface SnapshotUpdatePayload {
     total_account?: number;
     modal?: number;
     cross_sell_count?: number;
-    base_commission?: number;
+    base_commission?: number | null;
+    mrc_override?: number | null;
 }
 
 export interface AccountManager {

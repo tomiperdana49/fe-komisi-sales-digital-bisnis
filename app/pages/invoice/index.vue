@@ -126,6 +126,9 @@
                         <UFormField label="Base Komisi" description="Kosongkan untuk pakai nilai Subscription sebagai basis komisi (default). Cuma memengaruhi nominal komisi, tidak mempengaruhi MRC/Subscription/Margin.">
                             <UInput v-model.number="editForm.base_commission" type="number" placeholder="Kosongkan = pakai Subscription" class="w-full" />
                         </UFormField>
+                        <UFormField label="MRC" description="Kosongkan untuk menghitung MRC otomatis dari Subscription / Month Period (default). Isi hanya kalau MRC invoice ini harus bernilai tetap.">
+                            <UInput v-model.number="editForm.mrc_override" type="number" placeholder="Kosongkan = hitung otomatis" class="w-full" />
+                        </UFormField>
                     </div>
 
                     <div class="flex justify-end gap-2 mt-6">
@@ -441,7 +444,8 @@ const openEdit = (item: SnapshotItem) => {
         total_account: item.totalAccount,
         modal: item.modal ?? undefined,
         cross_sell_count: item.crossSellCount ?? undefined,
-        base_commission: item.baseCommission ?? undefined
+        base_commission: item.baseCommission ?? undefined,
+        mrc_override: item.mrcOverride ?? undefined
     }
     editModalOpen.value = true
 }
@@ -450,7 +454,12 @@ const submitEdit = async () => {
     if (!editingItem.value) return
     saving.value = true
     try {
-        await invoiceService.updateSnapshot(editingItem.value.ai, editForm.value)
+        // Input number yang dikosongkan bernilai '' -> kirim null supaya override-nya terhapus
+        const payload = { ...editForm.value }
+        for (const key of ['base_commission', 'mrc_override'] as const) {
+            if ((payload[key] as unknown) === '') payload[key] = null
+        }
+        await invoiceService.updateSnapshot(editingItem.value.ai, payload)
         toast.add({ title: 'Snapshot updated successfully', color: 'success' })
         editModalOpen.value = false
         await fetchSnapshots()
