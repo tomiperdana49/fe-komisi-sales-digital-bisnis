@@ -65,6 +65,7 @@
                                     </UBadge>
                                 </div>
                             </div>
+                            <QuarterRewardRow v-if="commissionData.reward" :reward="commissionData.reward" />
                             <div class="flex items-center justify-between">
                                 <span class="text-sm text-gray-500 dark:text-gray-400">Cust Lama</span>
                                 <div class="flex items-center gap-2">

@@ -64,6 +64,12 @@
     }
 
     const items = computed<DropdownMenuItem[]>(() => [
+        ...(authState.user?.is_admin
+            ? [
+                { label: 'Invoice Snapshots', icon: 'i-lucide-receipt', to: '/invoice' },
+                { label: 'Target New MRC', icon: 'i-lucide-target', to: '/target' }
+            ]
+            : []),
         {
         label: 'Sign Out',
         icon: 'i-lucide-log-out',

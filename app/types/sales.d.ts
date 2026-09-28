@@ -88,6 +88,20 @@ export interface TrendData {
     growth: number;
 }
 
+export interface QuarterReward {
+    year: number;
+    quarter: number;
+    months: number[];
+    target: number;
+    achievement: number;
+    percentage: number;
+    thresholdPercentage: number;
+    bonus: number;
+    eligible: boolean;
+    isFinalMonth: boolean;
+    amount: number;
+}
+
 export interface SalesCommissionData {
     commission: {
         new: TrendData;
@@ -102,6 +116,7 @@ export interface SalesCommissionData {
     };
     newCustomer: TrendData;
     newAccount: TrendData;
+    reward?: QuarterReward | null;
 }
 
 export interface SalesYearlyQueryParams {

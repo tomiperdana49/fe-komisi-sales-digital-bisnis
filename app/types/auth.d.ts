@@ -9,6 +9,7 @@ export interface User {
     job_level: string
     branch: string
     manager_id: number
+    is_admin?: boolean
 }
 
 export interface AuthData {

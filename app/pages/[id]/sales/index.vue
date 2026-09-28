@@ -50,6 +50,7 @@
                                     </UBadge>
                                 </div>
                             </div>
+                            <QuarterRewardRow v-if="commissionData.reward" :reward="commissionData.reward" />
                         </div>
                     </MetricCard>
                     <MetricCard

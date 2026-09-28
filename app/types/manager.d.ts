@@ -52,6 +52,7 @@ export interface ManagerCommissionData {
     };
     newCustomer: TrendData;
     newAccount: TrendData;
+    reward?: import('./sales').QuarterReward | null;
 }
 
 export interface ManagerCommissionYearlyResponseData {
