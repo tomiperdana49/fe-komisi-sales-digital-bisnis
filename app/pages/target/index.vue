@@ -5,7 +5,8 @@
         <div class="py-6">
             <h1 class="text-2xl font-bold text-highlighted">Target New MRC</h1>
             <p class="text-sm text-gray-500">
-                Target New MRC per AM per bulan, berdasarkan branch. Target berlaku mulai bulan yang dipilih sampai ada target baru untuk branch yang sama.
+                Target New MRC per AM per bulan, berdasarkan branch dan organisasi. Target berlaku mulai bulan yang dipilih sampai ada target baru untuk branch dan organisasi yang sama.
+                Urutan pencarian: branch + organisasi, branch saja, organisasi saja, lalu default.
             </p>
         </div>
 
@@ -17,7 +18,10 @@
 
                 <div class="space-y-4">
                     <UFormField label="Branch">
-                        <USelect v-model="form.branchId" :items="branchOptions" placeholder="Pilih branch" class="w-full" />
+                        <USelectMenu v-model="form.branchId" :items="branchOptions" value-key="value" placeholder="Pilih branch" :search-input="{ placeholder: 'Cari branch...' }" class="w-full" />
+                    </UFormField>
+                    <UFormField label="Organisasi">
+                        <USelectMenu v-model="form.organizationName" :items="organizationOptions" value-key="value" :search-input="{ placeholder: 'Cari organisasi...' }" class="w-full" />
                     </UFormField>
                     <div class="grid grid-cols-2 gap-3">
                         <UFormField label="Berlaku mulai bulan">
@@ -52,7 +56,7 @@
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { TargetService } from '~/services/target-service'
-import type { BranchOption, BranchTarget, BranchTargetPayload, RewardRule } from '~/types/target'
+import type { BranchOption, BranchTarget, BranchTargetPayload, OrganizationOption, RewardRule } from '~/types/target'
 
 const UButton = resolveComponent('UButton')
 
@@ -61,6 +65,7 @@ const toast = useToast()
 
 const targets = ref<BranchTarget[]>([])
 const branches = ref<BranchOption[]>([])
+const organizations = ref<OrganizationOption[]>([])
 const rules = ref<{ am: RewardRule; sm: RewardRule }>()
 const loading = ref(false)
 const saving = ref(false)
@@ -68,6 +73,7 @@ const saving = ref(false)
 const now = new Date()
 const form = ref<BranchTargetPayload>({
     branchId: '',
+    organizationName: '*',
     year: now.getFullYear(),
     month: now.getMonth() + 1,
     targetNewMrc: 0
@@ -81,12 +87,33 @@ const yearOptions = [2025, 2026, 2027, 2028, 2029, 2030]
 
 const branchName = (branchId: string) => branches.value.find(b => b.branchId === branchId)?.name ?? branchId
 const branchOptions = computed(() => branches.value.map(b => ({ label: `${b.branchId} - ${b.name}`, value: b.branchId })))
+const organizationName = (value: string) => organizations.value.find(o => o.organizationName === value)?.name ?? value
+// Organisasi yang ditampilkan mengikuti branch yang dipilih; branch Default ('*') / belum dipilih = semua organisasi
+const organizationOptions = computed(() => {
+    const branchId = form.value.branchId
+    const showAll = !branchId || branchId === '*'
+    return organizations.value
+        .filter(o => o.organizationName === '*' || showAll || o.branchIds.includes(branchId))
+        .map(o => ({ label: o.name, value: o.organizationName }))
+})
+
+// Ganti branch: kalau organisasi yang dipilih tidak ada di branch baru, kembali ke "Semua organisasi"
+watch(organizationOptions, (options) => {
+    if (!options.some(o => o.value === form.value.organizationName)) {
+        form.value.organizationName = '*'
+    }
+})
 
 const columns: TableColumn<BranchTarget>[] = [
     {
         accessorKey: 'branch_id',
         header: 'Branch',
         cell: ({ row }) => `${row.original.branch_id} - ${branchName(row.original.branch_id)}`
+    },
+    {
+        accessorKey: 'organization_name',
+        header: 'Organisasi',
+        cell: ({ row }) => organizationName(row.original.organization_name)
     },
     {
         id: 'period',
@@ -126,6 +153,7 @@ const fetchTargets = async () => {
         const response = await targetService.getTargets()
         targets.value = response.data.targets
         branches.value = response.data.branches
+        organizations.value = response.data.organizations
         rules.value = response.data.rules
     } finally {
         loading.value = false
@@ -135,6 +163,7 @@ const fetchTargets = async () => {
 const edit = (target: BranchTarget) => {
     form.value = {
         branchId: target.branch_id,
+        organizationName: target.organization_name,
         year: target.year,
         month: target.month,
         targetNewMrc: target.target_new_mrc
