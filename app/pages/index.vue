@@ -19,8 +19,10 @@
                     Team member list
                 </p>
             </div>
-            <div class="w-full lg:w-auto">
-                <UInput v-model="searchQuery" icon="i-lucide-search" size="md" variant="outline" class="w-full" placeholder="Search..." />
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                <USelectMenu v-model="selectedMonthObject" :items="monthItems" class="w-full sm:w-40" />
+                <USelectMenu v-model="year" :items="yearItems" class="w-full sm:w-28" />
+                <UInput v-model="searchQuery" icon="i-lucide-search" size="md" variant="outline" class="w-full sm:w-64" placeholder="Search..." />
             </div>
         </div>
         </div>
@@ -39,9 +41,12 @@
                         :ui="{ avatar: 'h-14 w-14' }"
                     >
                         <div class="min-w-0">
-                        <h1 class="text-md font-medium text-gray-900 dark:text-white truncate">
-                            {{ card.name }}
-                        </h1>
+                        <div class="flex items-center gap-2 min-w-0">
+                            <h1 class="text-md font-medium text-gray-900 dark:text-white truncate">
+                                {{ card.name }}
+                            </h1>
+                            <UBadge v-if="card.inactive" label="Nonaktif" color="neutral" variant="subtle" size="sm" class="shrink-0" />
+                        </div>
 
                         <p class="text-xs text-gray-500 dark:text-gray-400 truncate mb-1">
                             {{ card.employeeId }} - {{ card.organizationName }}
@@ -63,10 +68,34 @@
 
 <script setup lang="ts">
 import { EmployeeService } from '~/services/employee-service';
+import { AdditionalService } from '~/services/additional-service';
 
 const { state: authState } = useAuth()
-const employeeCard = ref<{ employeeId: string; name: string; photoProfile: string; position: string; organizationName: string; jobLevel: string; to: string }[]>([])
+const employeeCard = ref<{ employeeId: string; name: string; photoProfile: string; position: string; organizationName: string; jobLevel: string; inactive: boolean; to: string }[]>([])
 const searchQuery = ref('')
+
+// Periode komisi (cut-off 26–25): karyawan yang resign sebelum awal periode tidak ditampilkan
+const month = ref<number>()
+const year = ref<number>()
+const yearItems = [2026, 2027, 2028, 2029, 2030]
+const monthItems = [
+    { label: 'Januari', value: 1 },
+    { label: 'Februari', value: 2 },
+    { label: 'Maret', value: 3 },
+    { label: 'April', value: 4 },
+    { label: 'Mei', value: 5 },
+    { label: 'Juni', value: 6 },
+    { label: 'Juli', value: 7 },
+    { label: 'Agustus', value: 8 },
+    { label: 'September', value: 9 },
+    { label: 'Oktober', value: 10 },
+    { label: 'November', value: 11 },
+    { label: 'Desember', value: 12 },
+]
+const selectedMonthObject = computed({
+    get: () => monthItems.find(item => item.value === month.value),
+    set: (val) => { month.value = val?.value }
+})
 const { getRoute } = useDashboardRoute()
 
 const greeting = computed(() => {
@@ -89,10 +118,18 @@ const filteredEmployeeCards = computed(() => {
     })
 })
 
+const fetchDefaultPeriod = async () => {
+    const response = await new AdditionalService().getCurrentPeriod()
+    if (response?.data) {
+        year.value = response.data.year
+        month.value = response.data.month
+    }
+}
+
 const fetchEmployeeCard = async () => {
-    if (!authState.user?.employee_id) return
+    if (!authState.user?.employee_id || !month.value || !year.value) return
     const employeeService = new EmployeeService()
-    const data = await employeeService.getEmployeeHierarchy(authState.user?.employee_id)
+    const data = await employeeService.getEmployeeHierarchy(authState.user?.employee_id, { month: month.value, year: year.value })
     employeeCard.value = data.data.map((item) => {
         return {
             photoProfile: item.photo_profile,
@@ -101,21 +138,18 @@ const fetchEmployeeCard = async () => {
             position: item.job_position,
             organizationName: item.organization_name,
             jobLevel: item.job_level,
+            inactive: Boolean(item.deactivated_at),
             to: getRoute(item),
         }
     })
 }
 
-watch(() => authState.user, (user) => {
-    if (user?.employee_id) {
-        fetchEmployeeCard()
-    }
-}, { immediate: true })
+watch([() => authState.user?.employee_id, month, year], () => {
+    fetchEmployeeCard()
+})
 
 onMounted(() => {
-    if (authState.user?.employee_id) {
-        fetchEmployeeCard()
-    }
+    fetchDefaultPeriod()
 })
 
 </script>

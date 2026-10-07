@@ -90,7 +90,7 @@ export class AuthService {
       this.setSession(response.data)
       return response.data
     } catch (error: any) {
-      throw new Error(`Failed to login with Google: ${error.message}`)
+      throw new Error(error.response?.data?.message ?? `Failed to login with Google: ${error.message}`)
     }
   }
 

@@ -85,13 +85,20 @@ import type { FormSubmitEvent } from "@nuxt/ui"
 
 const loading = ref(false)
 
+const INACTIVE_MESSAGE = 'Employee is no longer active'
+
 const handleOnSuccess = async (response: any) => {
-  const result = await authService.googleLogin(response.code);
-  toast.add({ description: 'Login Successful', color: 'primary' })
-  
-  const { getRoute } = useDashboardRoute()
-  navigateTo(getRoute(result.data.user))
-  googleLoading.value = false
+  try {
+    const result = await authService.googleLogin(response.code);
+    toast.add({ description: 'Login Successful', color: 'primary' })
+
+    const { getRoute } = useDashboardRoute()
+    navigateTo(getRoute(result.data.user))
+  } catch (error: any) {
+    toast.add({ description: error?.message === INACTIVE_MESSAGE ? 'Your account is no longer active' : 'Google Sign-In failed', color: 'error' })
+  } finally {
+    googleLoading.value = false
+  }
 };
 
 const handleOnError = (errorResponse: any) => {
@@ -133,7 +140,7 @@ type Schema = z.output<typeof schema>
     const { getRoute } = useDashboardRoute()
     navigateTo(getRoute(result.data.user))
   } catch (error: any) {
-    toast.add({ description: 'Invalid Employee ID or Password', color: 'error' })
+    toast.add({ description: error?.message === INACTIVE_MESSAGE ? 'Your account is no longer active' : 'Invalid Employee ID or Password', color: 'error' })
   } finally {
     loading.value = false
   }

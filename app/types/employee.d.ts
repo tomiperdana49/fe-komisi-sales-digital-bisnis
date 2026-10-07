@@ -15,6 +15,7 @@ export interface Employee {
     job_level: string
     branch: string
     manager_id: number
+    deactivated_at: string | null
 }
 
 export interface EmployeeHierarchyResponseData {

@@ -16,9 +16,10 @@ export class EmployeeService {
         }
     }
 
-    async getEmployeeHierarchy(employeeId: string, search?: string): Promise<EmployeeHierarchyResponseData> {
+    async getEmployeeHierarchy(employeeId: string, period?: { month?: number, year?: number }): Promise<EmployeeHierarchyResponseData> {
         try {
-            const response = await apiService.client.get(`/employee/${employeeId}/hierarchy?search=${search}`, {
+            const response = await apiService.client.get(`/employee/${employeeId}/hierarchy`, {
+                params: { month: period?.month, year: period?.year },
                 headers: {
                     authorization: `Bearer ${useAuth().state.token}`
                 }
