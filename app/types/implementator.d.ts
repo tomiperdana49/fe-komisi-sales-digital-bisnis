@@ -43,6 +43,7 @@ export interface InvoiceImplementatorData {
     };
     subscription: number;
     mrc: number;
+    implementatorPeriodDate: string | null;
     commissionPercentage: number;
     commission: number;
 }

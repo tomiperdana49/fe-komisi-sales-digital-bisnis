@@ -208,11 +208,17 @@ const columns: TableColumn<InvoiceImplementatorData>[] = [
         accessorKey: 'paidDate',
         header: 'Paid Date',
         cell: ({ row }) => {
-            return new Date(row.getValue('paidDate')).toLocaleString('en-US', {
+            const paid = new Date(row.getValue('paidDate')).toLocaleString('en-US', {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric'
             })
+            // Invoice periode lain yang komisi implementatornya dialihkan ke periode ini
+            if (!row.original.implementatorPeriodDate) return paid
+            return h('div', { class: 'flex flex-col' }, [
+                h('span', paid),
+                h('span', { class: 'text-xs text-warning' }, 'Dialihkan ke periode ini')
+            ])
         }
     },
     {

@@ -38,6 +38,7 @@ export interface SnapshotItem {
     crossSellCount: number | null;
     baseCommission: number | null;
     mrcOverride: number | null;
+    implementatorPeriodDate: string | null;
     mrc: number;
     commissionPercentage: number;
     commission: number;
@@ -53,6 +54,8 @@ export interface SnapshotUpdatePayload {
     cross_sell_count?: number;
     base_commission?: number | null;
     mrc_override?: number | null;
+    implementator_id?: string | null;
+    implementator_period_date?: string | null;
 }
 
 export interface AccountManager {

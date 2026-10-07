@@ -129,6 +129,14 @@
                         <UFormField label="MRC" description="Kosongkan untuk menghitung MRC otomatis dari Subscription / Month Period (default). Isi hanya kalau MRC invoice ini harus bernilai tetap.">
                             <UInput v-model.number="editForm.mrc_override" type="number" placeholder="Kosongkan = hitung otomatis" class="w-full" />
                         </UFormField>
+                        <template v-if="editingItem?.serviceGroupId === 'NW'">
+                            <UFormField label="Implementator (Employee ID)" description="ID karyawan implementator, misal 0202493.">
+                                <UInput v-model="editForm.implementator_id" placeholder="Kosongkan = tidak ada implementator" class="w-full" />
+                            </UFormField>
+                            <UFormField label="Tanggal Periode Komisi Implementator" description="Isi tanggal di periode tujuan (misal 2026-10-01 untuk periode Oktober) kalau komisi implementator invoice ini harus dihitung di periode lain dari Paid Date, misalnya karena implementator baru diisi setelah periodenya tutup. Komisi sales/manager tetap ikut Paid Date.">
+                                <UInput v-model="editForm.implementator_period_date" type="date" class="w-full" />
+                            </UFormField>
+                        </template>
                     </div>
 
                     <div class="flex justify-end gap-2 mt-6">
@@ -257,7 +265,13 @@ const columns: TableColumn<SnapshotItem>[] = [
         cell: ({ row }) => {
             const value = row.getValue('paidDate') as string
             if (!value) return '-'
-            return new Date(value).toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+            const paid = new Date(value).toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+            const periodDate = row.original.implementatorPeriodDate
+            if (!periodDate) return paid
+            return h('div', { class: 'flex flex-col' }, [
+                h('span', paid),
+                h('span', { class: 'text-xs text-warning' }, `Implementator: ${new Date(periodDate).toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`)
+            ])
         }
     },
     {
@@ -435,6 +449,12 @@ const editingItem = ref<SnapshotItem | null>(null)
 const saving = ref(false)
 const editForm = ref<SnapshotUpdatePayload>({})
 
+// Tanggal dari API bisa berupa ISO datetime (UTC); ambil tanggal lokalnya untuk <input type="date">
+const toDateInput = (value: string) => {
+    const d = new Date(value)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 const openEdit = (item: SnapshotItem) => {
     editingItem.value = item
     editForm.value = {
@@ -445,7 +465,11 @@ const openEdit = (item: SnapshotItem) => {
         modal: item.modal ?? undefined,
         cross_sell_count: item.crossSellCount ?? undefined,
         base_commission: item.baseCommission ?? undefined,
-        mrc_override: item.mrcOverride ?? undefined
+        mrc_override: item.mrcOverride ?? undefined,
+        ...(item.serviceGroupId === 'NW' && {
+            implementator_id: item.implementator.employeeId || undefined,
+            implementator_period_date: item.implementatorPeriodDate ? toDateInput(item.implementatorPeriodDate) : undefined
+        })
     }
     editModalOpen.value = true
 }
@@ -456,7 +480,7 @@ const submitEdit = async () => {
     try {
         // Input number yang dikosongkan bernilai '' -> kirim null supaya override-nya terhapus
         const payload = { ...editForm.value }
-        for (const key of ['base_commission', 'mrc_override'] as const) {
+        for (const key of ['base_commission', 'mrc_override', 'implementator_id', 'implementator_period_date'] as const) {
             if ((payload[key] as unknown) === '') payload[key] = null
         }
         await invoiceService.updateSnapshot(editingItem.value.ai, payload)
