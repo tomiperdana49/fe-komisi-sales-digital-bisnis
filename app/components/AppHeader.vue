@@ -18,6 +18,12 @@
             class="flex items-center gap-1"
         >
         
+            <UTooltip text="Kirim feedback">
+                <UButton icon="i-lucide-message-square-text" color="neutral" variant="ghost" size="sm" aria-label="Kirim feedback" :loading="isCapturing" @click="triggerFeedback()" />
+            </UTooltip>
+            <UTooltip text="List feedback">
+                <UButton icon="i-lucide-list" color="neutral" variant="ghost" size="sm" aria-label="List feedback" :to="FEEDBACK_SHEET_URL" target="_blank" />
+            </UTooltip>
             <UColorModeButton size="sm" />
             <ClientOnly>
                 <UDropdownMenu
@@ -50,12 +56,15 @@
         </div>
         </template>
     </UHeader>
+
+    <FeedbackModal v-model:open="feedbackOpen" />
 </template>
 
 <script setup lang="ts">
     import type { DropdownMenuItem } from '@nuxt/ui'
     const { state: authState, service: authService } = useAuth()
     const toast = useToast()
+    const { isOpen: feedbackOpen, isCapturing, triggerFeedback } = useFeedback()
 
     const handleLogout = async () => {
         await authService.logout()

@@ -16,6 +16,7 @@
     "@nuxt/ui": "^4.3.0",
     "@vite-pwa/nuxt": "1.1.0",
     "axios": "^1.13.2",
+    "modern-screenshot": "4.7.0",
     "nuxt": "^4.2.2",
     "nuxt-charts": "2.0.0",
     "nuxt-vue3-google-signin": "0.0.13",
