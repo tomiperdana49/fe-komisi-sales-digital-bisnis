@@ -96,53 +96,53 @@
             </template>
         </UCard>
 
-        <UModal v-model:open="editModalOpen" :ui="{ overlay: 'bg-white/45 dark:bg-black/45 backdrop-blur-xs' }">
-            <template #content>
-                <div class="p-5">
-                    <div class="space-y-1 mb-4">
-                        <h3 class="text-lg font-semibold">Edit Snapshot</h3>
-                        <p class="text-sm text-gray-500">AI: {{ editingItem?.ai }} — {{ editingItem?.customerCompany }}</p>
-                    </div>
+        <UModal
+            v-model:open="editModalOpen"
+            title="Edit Snapshot"
+            :description="`AI: ${editingItem?.ai ?? ''} — ${editingItem?.customerCompany ?? ''}`"
+            :ui="{ overlay: 'bg-white/45 dark:bg-black/45 backdrop-blur-xs' }"
+        >
+            <template #body>
+                <div class="space-y-4">
+                    <UFormField label="Status">
+                        <USelect v-model="editForm.status" :items="editStatusOptions" class="w-full" />
+                    </UFormField>
+                    <UFormField label="Subscription">
+                        <UInput v-model.number="editForm.subscription" type="number" class="w-full" />
+                    </UFormField>
+                    <UFormField label="Month Period">
+                        <UInput v-model.number="editForm.month_period" type="number" step="0.01" class="w-full" />
+                    </UFormField>
+                    <UFormField label="Total Account">
+                        <UInput v-model.number="editForm.total_account" type="number" class="w-full" />
+                    </UFormField>
+                    <UFormField v-if="editingItem?.serviceType === 'resell'" label="Modal">
+                        <UInput v-model.number="editForm.modal" type="number" class="w-full" />
+                    </UFormField>
+                    <UFormField v-if="editingItem?.serviceType === 'internal'" label="Cross Sell Count">
+                        <UInput v-model.number="editForm.cross_sell_count" type="number" class="w-full" />
+                    </UFormField>
+                    <UFormField label="Base Komisi" description="Kosongkan untuk pakai nilai Subscription sebagai basis komisi (default). Cuma memengaruhi nominal komisi, tidak mempengaruhi MRC/Subscription/Margin.">
+                        <UInput v-model.number="editForm.base_commission" type="number" placeholder="Kosongkan = pakai Subscription" class="w-full" />
+                    </UFormField>
+                    <UFormField label="MRC" description="Kosongkan untuk menghitung MRC otomatis dari Subscription / Month Period (default). Isi hanya kalau MRC invoice ini harus bernilai tetap.">
+                        <UInput v-model.number="editForm.mrc_override" type="number" placeholder="Kosongkan = hitung otomatis" class="w-full" />
+                    </UFormField>
+                    <template v-if="editingItem?.serviceGroupId === 'NW'">
+                        <UFormField label="Implementator (Employee ID)" description="ID karyawan implementator, misal 0202493.">
+                            <UInput v-model="editForm.implementator_id" placeholder="Kosongkan = tidak ada implementator" class="w-full" />
+                        </UFormField>
+                        <UFormField label="Tanggal Periode Komisi Implementator" description="Isi tanggal di periode tujuan (misal 2026-10-01 untuk periode Oktober) kalau komisi implementator invoice ini harus dihitung di periode lain dari Paid Date, misalnya karena implementator baru diisi setelah periodenya tutup. Komisi sales/manager tetap ikut Paid Date.">
+                            <UInput v-model="editForm.implementator_period_date" type="date" class="w-full" />
+                        </UFormField>
+                    </template>
+                </div>
+            </template>
 
-                    <div class="space-y-4">
-                        <UFormField label="Status">
-                            <USelect v-model="editForm.status" :items="editStatusOptions" class="w-full" />
-                        </UFormField>
-                        <UFormField label="Subscription">
-                            <UInput v-model.number="editForm.subscription" type="number" class="w-full" />
-                        </UFormField>
-                        <UFormField label="Month Period">
-                            <UInput v-model.number="editForm.month_period" type="number" step="0.01" class="w-full" />
-                        </UFormField>
-                        <UFormField label="Total Account">
-                            <UInput v-model.number="editForm.total_account" type="number" class="w-full" />
-                        </UFormField>
-                        <UFormField v-if="editingItem?.serviceType === 'resell'" label="Modal">
-                            <UInput v-model.number="editForm.modal" type="number" class="w-full" />
-                        </UFormField>
-                        <UFormField v-if="editingItem?.serviceType === 'internal'" label="Cross Sell Count">
-                            <UInput v-model.number="editForm.cross_sell_count" type="number" class="w-full" />
-                        </UFormField>
-                        <UFormField label="Base Komisi" description="Kosongkan untuk pakai nilai Subscription sebagai basis komisi (default). Cuma memengaruhi nominal komisi, tidak mempengaruhi MRC/Subscription/Margin.">
-                            <UInput v-model.number="editForm.base_commission" type="number" placeholder="Kosongkan = pakai Subscription" class="w-full" />
-                        </UFormField>
-                        <UFormField label="MRC" description="Kosongkan untuk menghitung MRC otomatis dari Subscription / Month Period (default). Isi hanya kalau MRC invoice ini harus bernilai tetap.">
-                            <UInput v-model.number="editForm.mrc_override" type="number" placeholder="Kosongkan = hitung otomatis" class="w-full" />
-                        </UFormField>
-                        <template v-if="editingItem?.serviceGroupId === 'NW'">
-                            <UFormField label="Implementator (Employee ID)" description="ID karyawan implementator, misal 0202493.">
-                                <UInput v-model="editForm.implementator_id" placeholder="Kosongkan = tidak ada implementator" class="w-full" />
-                            </UFormField>
-                            <UFormField label="Tanggal Periode Komisi Implementator" description="Isi tanggal di periode tujuan (misal 2026-10-01 untuk periode Oktober) kalau komisi implementator invoice ini harus dihitung di periode lain dari Paid Date, misalnya karena implementator baru diisi setelah periodenya tutup. Komisi sales/manager tetap ikut Paid Date.">
-                                <UInput v-model="editForm.implementator_period_date" type="date" class="w-full" />
-                            </UFormField>
-                        </template>
-                    </div>
-
-                    <div class="flex justify-end gap-2 mt-6">
-                        <UButton label="Cancel" color="neutral" variant="subtle" :disabled="saving" @click="editModalOpen = false" />
-                        <UButton label="Save" color="primary" variant="solid" :loading="saving" @click="submitEdit" />
-                    </div>
+            <template #footer>
+                <div class="flex justify-end gap-2 w-full">
+                    <UButton label="Cancel" color="neutral" variant="subtle" :disabled="saving" @click="editModalOpen = false" />
+                    <UButton label="Save" color="primary" variant="solid" :loading="saving" @click="submitEdit" />
                 </div>
             </template>
         </UModal>
