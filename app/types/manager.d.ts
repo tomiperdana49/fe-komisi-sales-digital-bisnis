@@ -44,6 +44,8 @@ export interface ManagerCommissionData {
         custLama: TrendData;
     };
     mrc: TrendData;
+    mrcChurn?: TrendData;
+    mrcNet?: TrendData;
     subscription: {
         new: TrendData;
         recurring: TrendData;

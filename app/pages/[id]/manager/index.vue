@@ -156,7 +156,37 @@
                         icon-color="text-emerald-500 dark:text-emerald-400"
                         :data="commissionData?.mrc"
                         :is-currency="true"
-                    />
+                    >
+                        <div v-if="commissionData?.mrcChurn" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">MRC Churn</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatCurrency(commissionData.mrcChurn.value || 0) }}</span>
+                                    <!-- churn naik = buruk, warna dibalik -->
+                                    <UBadge
+                                        :color="trendColor(commissionData.mrcChurn.trend === 'up' ? 'down' : 'up')"
+                                        variant="soft"
+                                        size="sm"
+                                    >
+                                        {{ formatPercentage(commissionData.mrcChurn.percentage) }}
+                                    </UBadge>
+                                </div>
+                            </div>
+                            <div v-if="commissionData.mrcNet" class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">Net MRC</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatCurrency(commissionData.mrcNet.value || 0) }}</span>
+                                    <UBadge
+                                        :color="trendColor(commissionData.mrcNet.trend)"
+                                        variant="soft"
+                                        size="sm"
+                                    >
+                                        {{ formatPercentage(commissionData.mrcNet.percentage) }}
+                                    </UBadge>
+                                </div>
+                            </div>
+                        </div>
+                    </MetricCard>
                 </div>
             </div>
         </div>
