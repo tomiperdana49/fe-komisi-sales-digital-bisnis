@@ -34,6 +34,8 @@ export interface InvoiceSalesInternalData {
         photoProfile: string;
     };
     subscription: number;
+    baseCommission?: number | null;
+    mrcOverride?: number | null;
     mrc: number;
     commissionPercentage: number;
     commission: number;
@@ -65,6 +67,8 @@ export interface InvoiceSalesResellData {
     serviceType: string;
     crossSellCount: number;
     subscription: number;
+    baseCommission?: number | null;
+    mrcOverride?: number | null;
     mrc: number;
     modal: number;
     price: number;

@@ -193,12 +193,13 @@ import { EmployeeService } from '~/services/employee-service'
 import { InvoiceService } from '~/services/invoice-service'
 import { CommissionService } from '~/services/commission-service'
 import type { Employee } from '~/types/employee'
-import { h, resolveComponent } from 'vue'
+import { h, resolveComponent, type VNodeChild } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { InvoiceSalesInternalData, InvoiceSalesResellData, SalesCommissionData } from '~/types/sales'
 
 const UBadge = resolveComponent('UBadge')
 const UAvatar = resolveComponent('UAvatar')
+const UTooltip = resolveComponent('UTooltip')
 const ClientOnly = resolveComponent('ClientOnly')
 
 const invoiceData = ref<InvoiceSalesInternalData[]>([])
@@ -237,6 +238,13 @@ const activeTab = ref('internal')
 const resellWarningCount = computed(() => {
     return resellData.value.filter(row => row.status !== 'recurring' && row.status !== 'add' && !row.modal).length
 })
+
+// Tooltip "cara hitung" di sel tabel; rumusnya dari utils/invoice-calculation.ts
+const withCalculation = (content: VNodeChild, lines: string[]) =>
+    h(UTooltip, { content: { side: 'top' } }, {
+        default: () => h('div', { class: 'cursor-help underline decoration-dotted decoration-muted underline-offset-4' }, [content]),
+        content: () => h('div', { class: 'max-w-xs space-y-1 text-xs whitespace-normal text-left' }, lines.map(line => h('p', line)))
+    })
 
 const columns: TableColumn<InvoiceSalesInternalData>[] = [
     {
@@ -341,7 +349,7 @@ const columns: TableColumn<InvoiceSalesInternalData>[] = [
         },
         cell: ({ row }) => {
             const amount = Number.parseFloat(row.getValue('subscription'))
-            return formatCurrency(amount)
+            return withCalculation(formatCurrency(amount), subscriptionCalculation(row.original))
         },
         footer: ({ table }) => {
             const rows = table.getFilteredRowModel().rows
@@ -363,7 +371,7 @@ const columns: TableColumn<InvoiceSalesInternalData>[] = [
         },
         cell: ({ row }) => {
             const amount = Number.parseFloat(row.getValue('mrc'))
-            return formatCurrency(amount)
+            return withCalculation(formatCurrency(amount), mrcCalculation(row.original, 'internal'))
         },
         footer: ({ table }) => {
             const rows = table.getFilteredRowModel().rows
@@ -388,10 +396,10 @@ const columns: TableColumn<InvoiceSalesInternalData>[] = [
             const truncated = Math.trunc(period * 100) / 100
             const value = parseFloat(truncated.toFixed(2))
             const summary = row.original.monthPeriodSummary
-            return h('div', { class: 'flex flex-col' }, [
+            return withCalculation(h('div', { class: 'flex flex-col' }, [
                 h('span', { class: 'text-sm text-highlighted' }, value),
                 h('span', { class: 'text-sm' }, summary)
-            ])
+            ]), monthPeriodCalculation(row.original))
         }
     },
     {
@@ -415,10 +423,10 @@ const columns: TableColumn<InvoiceSalesInternalData>[] = [
             }
         },
         cell: ({ row }) => {
-            return h('div', { class: 'flex flex-col' }, [
+            return withCalculation(h('div', { class: 'flex flex-col' }, [
                 h('span', { class: 'text-sm text-highlighted' }, Intl.NumberFormat('id-ID', { style: 'decimal' }).format(row.original.commissionPercentage) + '%'),
                 h('span', { class: 'text-sm' }, formatCurrency(row.original.commission))
-            ])
+            ]), commissionCalculation(row.original, 'internal'))
         },
         footer: ({ table }) => {
             const rows = table.getFilteredRowModel().rows
@@ -516,7 +524,7 @@ const resellColumns: TableColumn<InvoiceSalesResellData>[] = [
         },
         cell: ({ row }) => {
             const amount = Number.parseFloat(row.getValue('subscription'))
-            return formatCurrency(amount)
+            return withCalculation(formatCurrency(amount), subscriptionCalculation(row.original))
         },
         footer: ({ table }) => {
             const rows = table.getFilteredRowModel().rows
@@ -538,7 +546,7 @@ const resellColumns: TableColumn<InvoiceSalesResellData>[] = [
         },
         cell: ({ row }) => {
             const amount = Number.parseFloat(row.getValue('mrc'))
-            return formatCurrency(amount)
+            return withCalculation(formatCurrency(amount), mrcCalculation(row.original, 'resell'))
         },
         footer: ({ table }) => {
             const rows = table.getFilteredRowModel().rows
@@ -631,10 +639,10 @@ const resellColumns: TableColumn<InvoiceSalesResellData>[] = [
             const truncated = Math.trunc(period * 100) / 100
             const value = parseFloat(truncated.toFixed(2))
             const summary = row.original.monthPeriodSummary
-            return h('div', { class: 'flex flex-col' }, [
+            return withCalculation(h('div', { class: 'flex flex-col' }, [
                 h('span', { class: 'text-sm text-highlighted' }, value),
                 h('span', { class: 'text-sm' }, summary)
-            ])
+            ]), monthPeriodCalculation(row.original))
         }
     },
     {
@@ -658,10 +666,10 @@ const resellColumns: TableColumn<InvoiceSalesResellData>[] = [
             }
         },
         cell: ({ row }) => {
-            return h('div', { class: 'flex flex-col' }, [
+            return withCalculation(h('div', { class: 'flex flex-col' }, [
                 h('span', { class: 'text-sm text-highlighted' }, Intl.NumberFormat('id-ID', { style: 'decimal' }).format(row.original.commissionPercentage) + '%'),
                 h('span', { class: 'text-sm' }, formatCurrency(row.original.commission))
-            ])
+            ]), commissionCalculation(row.original, 'resell'))
         },
         footer: ({ table }) => {
             const rows = table.getFilteredRowModel().rows
