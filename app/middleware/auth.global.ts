@@ -3,7 +3,8 @@ export default defineNuxtRouteMiddleware((to, from) => {
 
     const { state } = useAuth()
     
-    if (!state.token && to.path !== '/sign-in') {
+    // /tv: layar TV tanpa login, BE memeriksa ?key=
+    if (!state.token && to.path !== '/sign-in' && to.path !== '/tv') {
       return navigateTo('/sign-in')
     }
 })
