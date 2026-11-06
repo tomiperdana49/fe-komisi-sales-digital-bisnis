@@ -149,14 +149,11 @@ const ranking = computed(() => (board.value?.current ?? []).map((row, i, rows) =
 
 const daysLeftLabel = computed(() => {
     if (!data.value) return ''
-    const end = new Date(`${data.value.current.endDate}T23:59:59`)
-    const days = Math.ceil((end.getTime() - Date.now()) / 86_400_000)
+    const days = data.value.daysLeft
     return days <= 1 ? 'LAST DAY' : `${days} DAYS LEFT`
 })
 
-const updatedAt = computed(() => data.value
-    ? new Date(data.value.generatedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':')
-    : '')
+const updatedAt = computed(() => data.value?.generatedTime ?? '')
 
 /** Jarak gulir: semua baris di bawah podium dikurangi yang muat di layar. */
 const maxOffset = computed(() => Math.max(0, (ranking.value.length - PINNED - VISIBLE_CHASERS) * ROW_PX))

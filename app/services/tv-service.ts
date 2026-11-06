@@ -31,6 +31,10 @@ export interface TvMrcData {
     previous: TvMrcPeriod
     current: TvMrcPeriod
     generatedAt: string
+    /** Jam WIB (HH:mm) dari server, supaya tidak bergantung pada timezone TV. */
+    generatedTime: string
+    /** Sisa hari periode berjalan dari server, supaya tidak bergantung pada timezone TV. */
+    daysLeft: number
 }
 
 export const tvService = {
