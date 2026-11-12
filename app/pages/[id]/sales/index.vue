@@ -156,7 +156,10 @@
                             <h3 class="text-lg font-semibold">Invoice</h3>
                             <p class="text-sm text-gray-500">Monthly invoice details</p>
                         </div>
-                        <USelect v-model="statusFilter" :items="statusOptions" placeholder="Status" class="w-40" />
+                        <div class="flex items-center gap-2">
+                            <UInput v-model="invoiceSearch" icon="i-lucide-search" variant="outline" placeholder="Search invoice, customer, service..." class="w-full sm:w-72" />
+                            <USelect v-model="statusFilter" :items="statusOptions" placeholder="Status" class="w-40 shrink-0" />
+                        </div>
                     </div>
                 </template>
                 <UTabs :items="tabItems" v-model="activeTab" variant="link" :ui="{ trigger: 'grow' }" class="gap-4 w-full">
@@ -217,17 +220,20 @@ const statusOptions = [
     { label: 'Add', value: 'add' }
 ]
 
-const filteredInvoiceData = computed(() =>
-    statusFilter.value === 'all'
-        ? invoiceData.value
-        : invoiceData.value.filter(row => row.status === statusFilter.value)
-)
+const invoiceSearch = ref('')
 
-const filteredResellData = computed(() =>
-    statusFilter.value === 'all'
-        ? resellData.value
-        : resellData.value.filter(row => row.status === statusFilter.value)
-)
+// Cocokkan filter status + kata kunci (no. invoice, AI, customer, layanan); pencarian di data yang sudah dimuat
+const matchesInvoiceFilter = (row: InvoiceSalesInternalData | InvoiceSalesResellData) => {
+    if (statusFilter.value !== 'all' && row.status !== statusFilter.value) return false
+    const q = invoiceSearch.value.trim().toLowerCase()
+    if (!q) return true
+    return [row.invoiceNumber, row.ai, row.customerId, row.customerCompany, row.customerServiceId, row.serviceId, row.serviceName]
+        .some(value => value != null && String(value).toLowerCase().includes(q))
+}
+
+const filteredInvoiceData = computed(() => invoiceData.value.filter(matchesInvoiceFilter))
+
+const filteredResellData = computed(() => resellData.value.filter(matchesInvoiceFilter))
 
 const tabItems = [
     { label: 'Internal', slot: 'internal', value: 'internal' },
