@@ -184,6 +184,16 @@
                             </div>
                         </div>
                     </template>
+                    <template #churn>
+                        <div class="mt-4">
+                            <p class="text-sm text-gray-500 mb-4">
+                                Layanan yang berhenti (unreg) di periode ini. Total MRC hilang:
+                                <span class="font-semibold text-gray-900 dark:text-white">{{ formatCurrency(filteredChurnMrc) }}</span>
+                                ({{ filteredChurnData.length }} layanan). Filter status tidak berlaku di tab ini.
+                            </p>
+                            <UTable sticky :data="filteredChurnData" :columns="churnColumns" :loading="churnLoading" class="flex-1 max-h-[800px]" />
+                        </div>
+                    </template>
                 </UTabs>
             </UCard>
         </div>
@@ -198,7 +208,7 @@ import { CommissionService } from '~/services/commission-service'
 import type { Employee } from '~/types/employee'
 import { h, resolveComponent, type VNodeChild } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { InvoiceSalesInternalData, InvoiceSalesResellData, SalesCommissionData } from '~/types/sales'
+import type { InvoiceSalesInternalData, InvoiceSalesResellData, SalesCommissionData, SalesChurnData } from '~/types/sales'
 
 const UBadge = resolveComponent('UBadge')
 const UAvatar = resolveComponent('UAvatar')
@@ -207,6 +217,9 @@ const ClientOnly = resolveComponent('ClientOnly')
 
 const invoiceData = ref<InvoiceSalesInternalData[]>([])
 const resellData = ref<InvoiceSalesResellData[]>([])
+const churnData = ref<SalesChurnData[]>([])
+const churnLoading = ref(false)
+const churnLoaded = ref(false)
 const commissionData = ref<SalesCommissionData>()
 
 const statusFilter = ref('all')
@@ -235,9 +248,21 @@ const filteredInvoiceData = computed(() => invoiceData.value.filter(matchesInvoi
 
 const filteredResellData = computed(() => resellData.value.filter(matchesInvoiceFilter))
 
+// Churn: hanya kata kunci (tidak ada status invoice)
+const filteredChurnData = computed(() => {
+    const q = invoiceSearch.value.trim().toLowerCase()
+    if (!q) return churnData.value
+    return churnData.value.filter(row =>
+        [row.customerId, row.customerCompany, row.customerServiceId, row.serviceId, row.serviceName, row.closeReason]
+            .some(value => value != null && String(value).toLowerCase().includes(q))
+    )
+})
+const filteredChurnMrc = computed(() => filteredChurnData.value.reduce((sum, row) => sum + (Number(row.mrc) || 0), 0))
+
 const tabItems = [
     { label: 'Internal', slot: 'internal', value: 'internal' },
-    { label: 'Resell', slot: 'resell', value: 'resell' }
+    { label: 'Resell', slot: 'resell', value: 'resell' },
+    { label: 'Churn', slot: 'churn', value: 'churn' }
 ]
 const activeTab = ref('internal')
 
@@ -688,6 +713,8 @@ const resellColumns: TableColumn<InvoiceSalesResellData>[] = [
     }
 ]
 
+const churnColumns = buildChurnColumns()
+
 const route = useRoute()
 const employee = ref<Employee>()  
 
@@ -722,16 +749,36 @@ const fetchResellData = async () => {
     resellData.value = response.data
 }
 
+const fetchChurnData = async () => {
+    if (!year.value || !month.value) return
+    churnLoading.value = true
+    try {
+        const invoiceService = new InvoiceService()
+        const response = await invoiceService.getSalesChurn(route.params.id as string, { month: month.value, year: year.value })
+        churnData.value = response.data
+        churnLoaded.value = true
+    } finally {
+        churnLoading.value = false
+    }
+}
+
 watch([year, month], () => {
     fetchInvoiceData()
+    churnLoaded.value = false
     if (activeTab.value === 'resell') {
         fetchResellData()
+    }
+    if (activeTab.value === 'churn') {
+        fetchChurnData()
     }
 })
 
 watch(activeTab, (tab) => {
     if (tab === 'resell' && resellData.value.length === 0 && year.value && month.value) {
         fetchResellData()
+    }
+    if (tab === 'churn' && !churnLoaded.value) {
+        fetchChurnData()
     }
 })
 

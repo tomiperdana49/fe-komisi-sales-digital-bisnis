@@ -41,6 +41,27 @@ export interface InvoiceSalesInternalData {
     commission: number;
 }
 
+export interface SalesChurnResponseData {
+    success: boolean;
+    statusCode: number;
+    message: string;
+    data: SalesChurnData[];
+}
+
+export interface SalesChurnData {
+    salesId: string;
+    salesName?: string;
+    customerServiceId: number;
+    customerId: string;
+    customerCompany: string;
+    serviceId: string;
+    serviceName: string;
+    activationDate: string | null;
+    unregDate: string;
+    closeReason: string | null;
+    mrc: number;
+}
+
 export interface InvoiceSalesResellResponseData {
     success: boolean;
     statusCode: number;

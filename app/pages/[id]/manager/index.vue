@@ -204,6 +204,26 @@
         <div class="py-2 mt-4">
             <UCard>
                 <template #header>
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Team Churn</h3>
+                            <p class="text-sm text-gray-500">
+                                Layanan tim yang berhenti (unreg) di periode ini:
+                                <span class="font-semibold text-gray-900 dark:text-white">{{ filteredTeamChurnData.length }} layanan</span>,
+                                MRC hilang
+                                <span class="font-semibold text-gray-900 dark:text-white">{{ formatCurrency(filteredTeamChurnMrc) }}</span>
+                            </p>
+                        </div>
+                        <UInput v-model="teamChurnSearch" icon="i-lucide-search" variant="outline" placeholder="Search AM, customer, service..." class="w-full sm:w-72" />
+                    </div>
+                </template>
+                <UTable sticky :data="filteredTeamChurnData" :columns="teamChurnColumns" :loading="teamChurnLoading" class="flex-1 max-h-[800px]" />
+            </UCard>
+        </div>
+
+        <div class="py-2 mt-4">
+            <UCard>
+                <template #header>
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Invoice</h3>
                     <p class="text-sm text-gray-500">Manager's own recurring invoices</p>
                 </template>
@@ -233,7 +253,7 @@ import { InvoiceService } from '~/services/invoice-service'
 import type { Employee } from '~/types/employee'
 import type { ManagerTeamMemberData } from '~/types/team'
 import type { ManagerCommissionData } from '~/types/manager'
-import type { InvoiceSalesInternalData, InvoiceSalesResellData } from '~/types/sales'
+import type { InvoiceSalesInternalData, InvoiceSalesResellData, SalesChurnData } from '~/types/sales'
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
@@ -252,6 +272,21 @@ const commissionData = ref<ManagerCommissionData>()
 
 const managerInternalData = ref<InvoiceSalesInternalData[]>([])
 const managerResellData = ref<InvoiceSalesResellData[]>([])
+
+// Churn tim (anggota sama dengan kartu MRC Churn manager)
+const teamChurnData = ref<SalesChurnData[]>([])
+const teamChurnLoading = ref(false)
+const teamChurnSearch = ref('')
+const teamChurnColumns = buildChurnColumns({ withSales: true })
+const filteredTeamChurnData = computed(() => {
+    const q = teamChurnSearch.value.trim().toLowerCase()
+    if (!q) return teamChurnData.value
+    return teamChurnData.value.filter(row =>
+        [row.salesName, row.salesId, row.customerId, row.customerCompany, row.customerServiceId, row.serviceId, row.serviceName, row.closeReason]
+            .some(value => value != null && String(value).toLowerCase().includes(q))
+    )
+})
+const filteredTeamChurnMrc = computed(() => filteredTeamChurnData.value.reduce((sum, row) => sum + (Number(row.mrc) || 0), 0))
 
 const invoiceTabItems = [
     { label: 'Internal', slot: 'internal', value: 'internal' },
@@ -626,9 +661,22 @@ const fetchManagerInvoiceData = async () => {
     managerResellData.value = resellResponse.data.filter(row => row.status === 'recurring')
 }
 
+const fetchTeamChurnData = async () => {
+    if (!year.value || !month.value) return
+    teamChurnLoading.value = true
+    try {
+        const teamService = new TeamService()
+        const response = await teamService.getManagerTeamChurn(route.params.id as string, { month: month.value, year: year.value })
+        teamChurnData.value = response.data
+    } finally {
+        teamChurnLoading.value = false
+    }
+}
+
 watch([year, month], () => {
     fetchTeamData()
     fetchManagerInvoiceData()
+    fetchTeamChurnData()
 })
 
 fetchData()
