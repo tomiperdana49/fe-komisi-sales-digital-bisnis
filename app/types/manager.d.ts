@@ -40,6 +40,8 @@ export interface ManagerCommissionData {
     commission: {
         new: TrendData;
         recurring: TrendData;
+        // Komisi referral staff (sudah termasuk di total)
+        referral?: TrendData;
         total: TrendData;
         custLama: TrendData;
     };

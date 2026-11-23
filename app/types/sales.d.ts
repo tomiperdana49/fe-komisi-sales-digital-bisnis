@@ -131,6 +131,8 @@ export interface SalesCommissionData {
     commission: {
         new: TrendData;
         recurring: TrendData;
+        // Komisi Referral Internal sebagai pemberi lead (sudah termasuk di total)
+        referral?: TrendData;
         total: TrendData;
     };
     mrc: TrendData;
@@ -163,4 +165,35 @@ export interface SalesCommissionYearlyData {
     subscription: number;
     newCustomer: number;
     newAccount: number;
+}
+export interface ReferralDeal {
+    ai: number;
+    invoiceNo: string | null;
+    invoiceDate: string | null;
+    paidDate: string | null;
+    customerId: string | null;
+    customerName: string | null;
+    productName: string | null;
+    productLine: 'internal' | 'resell';
+    status: string;
+    mrc: number;
+    dpp: number;
+    termMonths: number;
+    sellerEmployeeId: string | null;
+    sellerName: string | null;
+    commissionPercentage: number;
+    commission: number;
+    eligible: boolean;
+    note: string | null;
+}
+
+export interface SalesReferralResponseData {
+    success: boolean;
+    statusCode: number;
+    message: string;
+    data: {
+        value: number;
+        count: number;
+        deals: ReferralDeal[];
+    };
 }

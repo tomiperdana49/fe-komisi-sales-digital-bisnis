@@ -65,6 +65,22 @@
                                     </UBadge>
                                 </div>
                             </div>
+                            <div
+                                v-if="commissionData.commission.referral && (commissionData.commission.referral.value !== 0 || commissionData.commission.referral.growth !== 0)"
+                                class="flex items-center justify-between"
+                            >
+                                <span class="text-sm text-gray-500 dark:text-gray-400">Referral</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatCurrency(commissionData.commission.referral.value) }}</span>
+                                    <UBadge
+                                        :color="trendColor(commissionData.commission.referral.trend)"
+                                        variant="soft"
+                                        size="sm"
+                                    >
+                                        {{ formatPercentage(commissionData.commission.referral.percentage) }}
+                                    </UBadge>
+                                </div>
+                            </div>
                             <QuarterRewardRow v-if="commissionData.reward" :reward="commissionData.reward" />
                             <div class="flex items-center justify-between">
                                 <span class="text-sm text-gray-500 dark:text-gray-400">Cust Lama</span>

@@ -43,6 +43,24 @@ export interface SnapshotItem {
     commissionPercentage: number;
     commission: number;
     isAdjust: boolean;
+    // Pemberi lead (Referral Internal), null kalau belum diisi
+    referral: SnapshotReferral | null;
+    // Invoice ini boleh diberi pemberi lead (status New, Paid Date >= awal periode November 2026)
+    referralEligible: boolean;
+}
+
+export interface SnapshotReferral {
+    referrerId: string;
+    referrerName: string;
+    note: string | null;
+    eligible: boolean;
+    commissionPercentage: number;
+    commission: number;
+}
+
+export interface ReferralPayload {
+    referrerId: string;
+    note?: string | null;
 }
 
 export interface SnapshotUpdatePayload {

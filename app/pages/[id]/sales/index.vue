@@ -50,6 +50,20 @@
                                     </UBadge>
                                 </div>
                             </div>
+                            <div v-if="hasReferral" class="flex items-center justify-between">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">Referral</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ formatCurrency(commissionData.commission.referral?.value || 0) }}</span>
+                                    <UBadge
+                                        v-if="commissionData.commission.referral"
+                                        :color="trendColor(commissionData.commission.referral.trend)"
+                                        variant="soft"
+                                        size="sm"
+                                    >
+                                        {{ formatPercentage(commissionData.commission.referral.percentage) }}
+                                    </UBadge>
+                                </div>
+                            </div>
                             <QuarterRewardRow v-if="commissionData.reward" :reward="commissionData.reward" />
                         </div>
                     </MetricCard>
@@ -194,6 +208,17 @@
                             <UTable sticky :data="filteredChurnData" :columns="churnColumns" :loading="churnLoading" class="flex-1 max-h-[800px]" />
                         </div>
                     </template>
+                    <template #referral>
+                        <div class="mt-4">
+                            <p class="text-sm text-gray-500 mb-4">
+                                Komisi Referral Internal sebagai pemberi lead: 10% × new MRC produk internal, 1% produk resell,
+                                sekali di periode Paid Date. Total:
+                                <span class="font-semibold text-gray-900 dark:text-white">{{ formatCurrency(filteredReferralCommission) }}</span>
+                                ({{ filteredReferralData.length }} invoice). Filter status tidak berlaku di tab ini.
+                            </p>
+                            <UTable sticky :data="filteredReferralData" :columns="referralColumns" :loading="referralLoading" class="flex-1 max-h-[800px]" />
+                        </div>
+                    </template>
                 </UTabs>
             </UCard>
         </div>
@@ -208,7 +233,7 @@ import { CommissionService } from '~/services/commission-service'
 import type { Employee } from '~/types/employee'
 import { h, resolveComponent, type VNodeChild } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { InvoiceSalesInternalData, InvoiceSalesResellData, SalesCommissionData, SalesChurnData } from '~/types/sales'
+import type { InvoiceSalesInternalData, InvoiceSalesResellData, SalesCommissionData, SalesChurnData, ReferralDeal } from '~/types/sales'
 
 const UBadge = resolveComponent('UBadge')
 const UAvatar = resolveComponent('UAvatar')
@@ -259,12 +284,110 @@ const filteredChurnData = computed(() => {
 })
 const filteredChurnMrc = computed(() => filteredChurnData.value.reduce((sum, row) => sum + (Number(row.mrc) || 0), 0))
 
-const tabItems = [
+// Referral (pemberi lead): baris di kartu & tab hanya muncul kalau periode ini atau bulan lalu ada komisinya
+const referralData = ref<ReferralDeal[]>([])
+const referralLoading = ref(false)
+const referralLoaded = ref(false)
+const hasReferral = computed(() => {
+    const referral = commissionData.value?.commission?.referral
+    return !!referral && (referral.value !== 0 || referral.growth !== 0)
+})
+
+const filteredReferralData = computed(() => {
+    const q = invoiceSearch.value.trim().toLowerCase()
+    if (!q) return referralData.value
+    return referralData.value.filter(row =>
+        [row.invoiceNo, row.ai, row.customerId, row.customerName, row.productName, row.sellerName]
+            .some(value => value != null && String(value).toLowerCase().includes(q))
+    )
+})
+const filteredReferralCommission = computed(() => filteredReferralData.value.reduce((sum, row) => sum + (Number(row.commission) || 0), 0))
+
+const tabItems = computed(() => [
     { label: 'Internal', slot: 'internal', value: 'internal' },
     { label: 'Resell', slot: 'resell', value: 'resell' },
-    { label: 'Churn', slot: 'churn', value: 'churn' }
-]
+    { label: 'Churn', slot: 'churn', value: 'churn' },
+    ...(hasReferral.value ? [{ label: 'Referral', slot: 'referral', value: 'referral' }] : [])
+])
 const activeTab = ref('internal')
+
+// Tab referral hilang saat pindah ke periode tanpa referral -> kembali ke Internal
+watch(hasReferral, (value) => {
+    if (!value && activeTab.value === 'referral') activeTab.value = 'internal'
+})
+
+const referralColumns: TableColumn<ReferralDeal>[] = [
+    {
+        accessorKey: 'invoiceNo',
+        header: 'Invoice Number',
+        cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
+            h('span', { class: 'font-bold text-highlighted' }, row.original.invoiceNo ?? '-'),
+            h('span', { class: 'text-sm' }, row.original.ai)
+        ])
+    },
+    {
+        accessorKey: 'paidDate',
+        header: 'Paid Date',
+        cell: ({ row }) => row.original.paidDate
+            ? new Date(row.original.paidDate).toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+            : '-'
+    },
+    {
+        header: 'Customer',
+        meta: { class: { th: 'min-w-[200px]', td: 'min-w-[200px]' } },
+        cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
+            h('span', { class: 'font-semibold' }, row.original.customerId ?? '-'),
+            h('span', { class: 'text-sm whitespace-normal break-words' }, row.original.customerName ?? '')
+        ])
+    },
+    {
+        header: 'Service',
+        meta: { class: { th: 'min-w-[200px]', td: 'min-w-[200px]' } },
+        cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
+            h('span', { class: 'text-sm whitespace-normal break-words' }, row.original.productName ?? '-'),
+            h('span', { class: 'text-xs text-gray-500' }, row.original.productLine === 'resell' ? 'Resell' : 'Internal')
+        ])
+    },
+    {
+        header: 'Penerima Lead',
+        cell: ({ row }) => h('div', { class: 'flex flex-col' }, [
+            h('span', { class: 'font-medium text-highlighted' }, row.original.sellerName ?? '-'),
+            h('span', { class: 'text-sm' }, row.original.sellerEmployeeId ?? '')
+        ])
+    },
+    {
+        header: 'Catatan',
+        meta: { class: { th: 'min-w-[180px]', td: 'min-w-[180px]' } },
+        cell: ({ row }) => h('span', { class: 'text-sm whitespace-normal break-words' }, row.original.note ?? '-')
+    },
+    {
+        accessorKey: 'mrc',
+        header: 'New MRC',
+        meta: { class: { th: 'text-right', td: 'text-right font-medium' } },
+        cell: ({ row }) => formatCurrency(Number(row.original.mrc) || 0)
+    },
+    {
+        header: 'Commission',
+        meta: { class: { th: 'text-right', td: 'text-right font-medium' } },
+        cell: ({ row }) => {
+            if (!row.original.eligible) {
+                return h('span', { class: 'text-xs text-warning' }, 'Tidak dihitung (bukan invoice New)')
+            }
+            return h('div', { class: 'flex flex-col' }, [
+                h('span', { class: 'text-sm text-highlighted' }, `${row.original.commissionPercentage}%`),
+                h('span', { class: 'text-sm' }, formatCurrency(row.original.commission))
+            ])
+        },
+        footer: ({ table }) => {
+            const rows = table.getFilteredRowModel().rows
+            const total = rows.reduce((acc, row) => acc + (Number(row.original.commission) || 0), 0)
+            return h(ClientOnly, null, {
+                default: () => h('div', { class: 'text-right font-bold' }, formatCurrency(total)),
+                fallback: () => h('div', { class: 'text-right font-bold' }, formatCurrency(0))
+            })
+        }
+    }
+]
 
 const resellWarningCount = computed(() => {
     return resellData.value.filter(row => row.status !== 'recurring' && row.status !== 'add' && !row.modal).length
@@ -762,14 +885,31 @@ const fetchChurnData = async () => {
     }
 }
 
+const fetchReferralData = async () => {
+    if (!year.value || !month.value) return
+    referralLoading.value = true
+    try {
+        const invoiceService = new InvoiceService()
+        const response = await invoiceService.getReferralInvoice(route.params.id as string, { month: month.value, year: year.value })
+        referralData.value = response.data.deals
+        referralLoaded.value = true
+    } finally {
+        referralLoading.value = false
+    }
+}
+
 watch([year, month], () => {
     fetchInvoiceData()
     churnLoaded.value = false
+    referralLoaded.value = false
     if (activeTab.value === 'resell') {
         fetchResellData()
     }
     if (activeTab.value === 'churn') {
         fetchChurnData()
+    }
+    if (activeTab.value === 'referral') {
+        fetchReferralData()
     }
 })
 
@@ -779,6 +919,9 @@ watch(activeTab, (tab) => {
     }
     if (tab === 'churn' && !churnLoaded.value) {
         fetchChurnData()
+    }
+    if (tab === 'referral' && !referralLoaded.value) {
+        fetchReferralData()
     }
 })
 

@@ -146,6 +146,62 @@
                 </div>
             </template>
         </UModal>
+
+        <UModal
+            v-model:open="referralModalOpen"
+            title="Pemberi Lead (Referral)"
+            :description="`AI: ${referralItem?.ai ?? ''} — ${referralItem?.customerCompany ?? ''}`"
+            :ui="{ overlay: 'bg-white/45 dark:bg-black/45 backdrop-blur-xs' }"
+        >
+            <template #body>
+                <div class="space-y-4">
+                    <p class="text-sm text-gray-500">
+                        Account Manager yang memberi lead invoice ini dapat komisi referral
+                        <span class="font-semibold text-highlighted">{{ referralItem?.serviceType === 'resell' ? '1%' : '10%' }} × new MRC</span>
+                        ({{ formatCurrency(referralPreview) }}), sekali di periode Paid Date. Komisi
+                        {{ referralItem?.sales?.name || 'sales' }} tidak berubah. Tidak mengubah data snapshot (tidak jadi Adjusted).
+                    </p>
+                    <UFormField label="Pemberi Lead" required>
+                        <USelectMenu
+                            v-model="referralForm.referrerId"
+                            :items="referrerOptions"
+                            value-key="value"
+                            placeholder="Pilih Account Manager"
+                            class="w-full"
+                        />
+                    </UFormField>
+                    <UFormField label="Catatan" description="Opsional, misal asal lead: customer GWS milik pemberi lead.">
+                        <UInput v-model="referralForm.note" maxlength="255" class="w-full" />
+                    </UFormField>
+                </div>
+            </template>
+
+            <template #footer>
+                <div class="flex justify-between gap-2 w-full">
+                    <UButton
+                        v-if="referralItem?.referral"
+                        label="Hapus Referral"
+                        color="error"
+                        variant="subtle"
+                        :loading="referralDeleting"
+                        :disabled="referralSaving"
+                        @click="removeReferral"
+                    />
+                    <span v-else />
+                    <div class="flex gap-2">
+                        <UButton label="Cancel" color="neutral" variant="subtle" :disabled="referralSaving || referralDeleting" @click="referralModalOpen = false" />
+                        <UButton
+                            label="Save"
+                            color="primary"
+                            variant="solid"
+                            :loading="referralSaving"
+                            :disabled="!referralForm.referrerId || referralDeleting"
+                            @click="submitReferral"
+                        />
+                    </div>
+                </div>
+            </template>
+        </UModal>
     </div>
 </template>
 
@@ -355,6 +411,21 @@ const columns: TableColumn<SnapshotItem>[] = [
         }
     },
     {
+        id: 'referral',
+        header: 'Referral',
+        meta: { class: { th: 'text-right', td: 'text-right' } },
+        cell: ({ row }) => {
+            const referral = row.original.referral
+            if (!referral) return h('span', { class: 'text-gray-400' }, '-')
+            return h('div', { class: 'flex flex-col items-end' }, [
+                h('span', { class: 'text-sm font-medium text-highlighted' }, referral.referrerName || referral.referrerId),
+                referral.eligible
+                    ? h('span', { class: 'text-sm' }, `${referral.commissionPercentage}% · ${formatCurrency(referral.commission)}`)
+                    : h('span', { class: 'text-xs text-warning' }, 'Tidak dihitung (bukan invoice New)')
+            ])
+        }
+    },
+    {
         id: 'isAdjust',
         header: 'Adjust',
         meta: { class: { th: 'text-center', td: 'text-center' } },
@@ -368,13 +439,28 @@ const columns: TableColumn<SnapshotItem>[] = [
         header: 'Actions',
         meta: { class: { th: 'text-center', td: 'text-center' } },
         cell: ({ row }) => {
-            return h(UButton, {
-                icon: 'i-lucide-pencil',
-                color: 'neutral',
-                variant: 'ghost',
-                size: 'sm',
-                onClick: () => openEdit(row.original)
-            })
+            const buttons = [
+                h(UButton, {
+                    icon: 'i-lucide-pencil',
+                    color: 'neutral',
+                    variant: 'ghost',
+                    size: 'sm',
+                    title: 'Edit Snapshot',
+                    onClick: () => openEdit(row.original)
+                })
+            ]
+            // Referral hanya untuk invoice New mulai periode November 2026 (atau yang sudah punya referral, untuk dihapus)
+            if (row.original.referralEligible || row.original.referral) {
+                buttons.push(h(UButton, {
+                    icon: 'i-lucide-user-plus',
+                    color: row.original.referral ? 'primary' : 'neutral',
+                    variant: 'ghost',
+                    size: 'sm',
+                    title: 'Pemberi Lead (Referral)',
+                    onClick: () => openReferral(row.original)
+                }))
+            }
+            return h('div', { class: 'flex justify-center gap-1' }, buttons)
         }
     }
 ]
@@ -489,6 +575,64 @@ const submitEdit = async () => {
         await fetchSnapshots()
     } finally {
         saving.value = false
+    }
+}
+
+// Referral Internal: pemberi lead disimpan terpisah dari snapshot (tidak membuat baris jadi Adjusted)
+const referralModalOpen = ref(false)
+const referralItem = ref<SnapshotItem | null>(null)
+const referralForm = ref<{ referrerId: string | undefined; note: string }>({ referrerId: undefined, note: '' })
+const referralSaving = ref(false)
+const referralDeleting = ref(false)
+const referrerCandidates = ref<{ employeeId: string; name: string }[]>([])
+
+// Kandidat = Account Manager aktif, kecuali sales invoice ini sendiri
+const referrerOptions = computed(() => referrerCandidates.value
+    .filter(c => c.employeeId !== referralItem.value?.sales?.employeeId)
+    .map(c => ({ label: `${c.name} (${c.employeeId})`, value: c.employeeId })))
+
+const referralPreview = computed(() => {
+    if (!referralItem.value) return 0
+    const rate = referralItem.value.serviceType === 'resell' ? 0.01 : 0.10
+    return (Number(referralItem.value.mrc) || 0) * rate
+})
+
+const openReferral = async (item: SnapshotItem) => {
+    referralItem.value = item
+    referralForm.value = { referrerId: item.referral?.referrerId, note: item.referral?.note ?? '' }
+    referralModalOpen.value = true
+    if (referrerCandidates.value.length === 0) {
+        const response = await invoiceService.getReferrerCandidates()
+        referrerCandidates.value = response.data
+    }
+}
+
+const submitReferral = async () => {
+    if (!referralItem.value || !referralForm.value.referrerId) return
+    referralSaving.value = true
+    try {
+        await invoiceService.setReferral(referralItem.value.ai, {
+            referrerId: referralForm.value.referrerId,
+            note: referralForm.value.note || null
+        })
+        toast.add({ title: 'Referral saved successfully', color: 'success' })
+        referralModalOpen.value = false
+        await fetchSnapshots()
+    } finally {
+        referralSaving.value = false
+    }
+}
+
+const removeReferral = async () => {
+    if (!referralItem.value) return
+    referralDeleting.value = true
+    try {
+        await invoiceService.deleteReferral(referralItem.value.ai)
+        toast.add({ title: 'Referral deleted successfully', color: 'success' })
+        referralModalOpen.value = false
+        await fetchSnapshots()
+    } finally {
+        referralDeleting.value = false
     }
 }
 </script>

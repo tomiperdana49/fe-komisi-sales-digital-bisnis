@@ -1,8 +1,8 @@
 
 import { apiService } from "./api-service"
-import type { InvoiceSalesInternalResponseData, InvoiceSalesResellResponseData, SalesInvoiceQueryParams, SalesChurnResponseData } from "~/types/sales"
+import type { InvoiceSalesInternalResponseData, InvoiceSalesResellResponseData, SalesInvoiceQueryParams, SalesChurnResponseData, SalesReferralResponseData } from "~/types/sales"
 import type { InvoiceImplementatorResponseData, ImplementatorInvoiceQueryParams, ImplementatorChurnResponseData } from "~/types/implementator"
-import type { SnapshotListQueryParams, SnapshotListResponseData, AccountManagerResponseData, SnapshotUpdatePayload } from "~/types/snapshot"
+import type { SnapshotListQueryParams, SnapshotListResponseData, AccountManagerResponseData, SnapshotUpdatePayload, ReferralPayload } from "~/types/snapshot"
 
 export class InvoiceService {
     async getSnapshotList(params: SnapshotListQueryParams): Promise<SnapshotListResponseData> {
@@ -104,6 +104,59 @@ export class InvoiceService {
     async getImplementatorChurn(implementatorId: string, params: ImplementatorInvoiceQueryParams): Promise<ImplementatorChurnResponseData> {
         try {
             const response = await apiService.client.get(`/invoice/${implementatorId}/implementator/churn`, {
+                headers: {
+                    authorization: `Bearer ${useAuth().state.token}`
+                },
+                params
+            })
+            return response.data
+        } catch (error: any) {
+            handleServiceError(error)
+        }
+    }
+
+    async getReferrerCandidates(): Promise<AccountManagerResponseData> {
+        try {
+            const response = await apiService.client.get(`/invoice/referrer-candidates`, {
+                headers: {
+                    authorization: `Bearer ${useAuth().state.token}`
+                }
+            })
+            return response.data
+        } catch (error: any) {
+            handleServiceError(error)
+        }
+    }
+
+    async setReferral(ai: number, data: ReferralPayload): Promise<any> {
+        try {
+            const response = await apiService.client.put(`/invoice/snapshot/${ai}/referral`, data, {
+                headers: {
+                    authorization: `Bearer ${useAuth().state.token}`
+                }
+            })
+            return response.data
+        } catch (error: any) {
+            handleServiceError(error)
+        }
+    }
+
+    async deleteReferral(ai: number): Promise<any> {
+        try {
+            const response = await apiService.client.delete(`/invoice/snapshot/${ai}/referral`, {
+                headers: {
+                    authorization: `Bearer ${useAuth().state.token}`
+                }
+            })
+            return response.data
+        } catch (error: any) {
+            handleServiceError(error)
+        }
+    }
+
+    async getReferralInvoice(employeeId: string, params: SalesInvoiceQueryParams): Promise<SalesReferralResponseData> {
+        try {
+            const response = await apiService.client.get(`/invoice/${employeeId}/referral`, {
                 headers: {
                     authorization: `Bearer ${useAuth().state.token}`
                 },
