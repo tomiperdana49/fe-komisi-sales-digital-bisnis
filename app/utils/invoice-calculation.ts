@@ -12,7 +12,8 @@ interface CalcRow {
     monthPeriodSummary?: string
     commission: number
     commissionPercentage: number
-    crossSellCount?: number
+    crossSellCount?: number | null
+    periodBooster?: boolean | null
     baseCommission?: number | null
     mrcOverride?: number | null
     margin?: number | null
@@ -95,7 +96,9 @@ export const commissionCalculation = (row: CalcRow, type: CalcType): string[] =>
         } else if (['new', 'termin'].includes(row.status)) {
             lines.push(Number(row.crossSellCount) > 0
                 ? `${statusLabel(row.status)} dengan cross-sell (${row.crossSellCount} layanan lain): 15%.`
-                : `${statusLabel(row.status)} tanpa cross-sell: 12%.`)
+                : row.periodBooster
+                    ? `${statusLabel(row.status)}: 15% (booster periode, sales punya cross-sell valid di periode ini).`
+                    : `${statusLabel(row.status)} tanpa cross-sell: 12%.`)
         } else if (row.status === 'setup') {
             lines.push('Setup: tidak ada komisi sales.')
         } else {

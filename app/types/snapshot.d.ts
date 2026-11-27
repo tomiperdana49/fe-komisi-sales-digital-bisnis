@@ -36,6 +36,7 @@ export interface SnapshotItem {
     subscription: number;
     modal: number | null;
     crossSellCount: number | null;
+    periodBooster?: boolean | null;
     baseCommission: number | null;
     mrcOverride: number | null;
     implementatorPeriodDate: string | null;

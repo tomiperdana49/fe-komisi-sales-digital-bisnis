@@ -28,6 +28,7 @@ export interface InvoiceSalesInternalData {
     serviceName: string;
     serviceType: string;
     crossSellCount: number;
+    periodBooster?: boolean | null;
     implementator: {
         name: string;
         employeeId: string;
@@ -87,6 +88,7 @@ export interface InvoiceSalesResellData {
     serviceName: string;
     serviceType: string;
     crossSellCount: number;
+    periodBooster?: boolean | null;
     subscription: number;
     baseCommission?: number | null;
     mrcOverride?: number | null;
