@@ -129,7 +129,7 @@
                     <template #invoice>
                         <div class="mt-4">
                             <div class="flex justify-end mb-4">
-                                <USelect v-model="statusFilter" :items="statusOptions" placeholder="Status" class="w-40" />
+                                <USelect v-model="statusFilter" :items="statusOptions" multiple placeholder="All Status" class="w-48" />
                             </div>
                             <UTable sticky :data="filteredInvoiceData" :columns="columns" class="flex-1 max-h-[800px]" />
                         </div>
@@ -170,9 +170,7 @@ const tabItems = [
 ]
 const activeTab = ref('invoice')
 
-const statusFilter = ref('all')
-const statusOptions = [
-    { label: 'All Status', value: 'all' },
+const { statusFilter, statusOptions, matchesStatus } = useStatusFilter([
     { label: 'New', value: 'new' },
     { label: 'Upgrade', value: 'upgrade' },
     { label: 'Prorate', value: 'prorate' },
@@ -180,13 +178,9 @@ const statusOptions = [
     { label: 'Recurring', value: 'recurring' },
     { label: 'Add', value: 'add' },
     { label: 'Setup', value: 'setup' }
-]
+])
 
-const filteredInvoiceData = computed(() =>
-    statusFilter.value === 'all'
-        ? invoiceData.value
-        : invoiceData.value.filter(row => row.status === statusFilter.value)
-)
+const filteredInvoiceData = computed(() => invoiceData.value.filter(row => matchesStatus(row.status)))
 
 const columns: TableColumn<InvoiceImplementatorData>[] = [
     {

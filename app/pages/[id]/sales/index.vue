@@ -172,7 +172,7 @@
                         </div>
                         <div class="flex items-center gap-2">
                             <UInput v-model="invoiceSearch" icon="i-lucide-search" variant="outline" placeholder="Search invoice, customer, service..." class="w-full sm:w-72" />
-                            <USelect v-model="statusFilter" :items="statusOptions" placeholder="Status" class="w-40 shrink-0" />
+                            <USelect v-model="statusFilter" :items="statusOptions" multiple placeholder="All Status" class="w-48 shrink-0" />
                         </div>
                     </div>
                 </template>
@@ -247,22 +247,20 @@ const churnLoading = ref(false)
 const churnLoaded = ref(false)
 const commissionData = ref<SalesCommissionData>()
 
-const statusFilter = ref('all')
-const statusOptions = [
-    { label: 'All Status', value: 'all' },
+const { statusFilter, statusOptions, matchesStatus } = useStatusFilter([
     { label: 'New', value: 'new' },
     { label: 'Upgrade', value: 'upgrade' },
     { label: 'Prorate', value: 'prorate' },
     { label: 'Termin', value: 'termin' },
     { label: 'Recurring', value: 'recurring' },
     { label: 'Add', value: 'add' }
-]
+])
 
 const invoiceSearch = ref('')
 
 // Cocokkan filter status + kata kunci (no. invoice, AI, customer, layanan); pencarian di data yang sudah dimuat
 const matchesInvoiceFilter = (row: InvoiceSalesInternalData | InvoiceSalesResellData) => {
-    if (statusFilter.value !== 'all' && row.status !== statusFilter.value) return false
+    if (!matchesStatus(row.status)) return false
     const q = invoiceSearch.value.trim().toLowerCase()
     if (!q) return true
     return [row.invoiceNumber, row.ai, row.customerId, row.customerCompany, row.customerServiceId, row.serviceId, row.serviceName]
