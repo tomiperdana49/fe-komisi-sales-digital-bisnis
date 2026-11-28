@@ -76,7 +76,8 @@
         ...(authState.user?.is_admin
             ? [
                 { label: 'Invoice Snapshots', icon: 'i-lucide-receipt', to: '/invoice' },
-                { label: 'Target New MRC', icon: 'i-lucide-target', to: '/target' }
+                { label: 'Target New MRC', icon: 'i-lucide-target', to: '/target' },
+                { label: 'Close Periode', icon: 'i-lucide-lock', to: '/period' }
             ]
             : []),
         {
